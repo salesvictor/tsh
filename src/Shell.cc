@@ -2,14 +2,21 @@
 
 #include <sys/signal.h>
 
+#include <iostream>
+
 void Shell::initShell() {
+  std::cout << "PID: " << getpid() << "\nPGID: " << getpgrp() << std::endl;
+
   // See if we are running interactively.
   terminal = STDIN_FILENO;
   interactive = isatty(terminal);
 
   if (interactive) {
+    std::cout << "Debug!@#!@" << std::endl;
+
     // Loop until we are in the foreground.
     while (tcgetpgrp(terminal) != (processGroupId = getpgrp())) {
+      std::cout << "aoskdjasok" << std::endl;
       kill(-processGroupId, SIGTTIN);
     }
 
@@ -34,4 +41,6 @@ void Shell::initShell() {
     // Save default terminal attributes for shell.
     tcgetattr(terminal, &terminalModes);
   }
+
+  std::cout << "PID: " << getpid() << "\nPGID: " << processGroupId << std::endl;
 }
