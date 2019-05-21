@@ -5,18 +5,21 @@
 #include <iostream>
 
 void Shell::initShell() {
-  std::cout << "PID: " << getpid() << "\nPGID: " << getpgrp() << std::endl;
-
   // See if we are running interactively.
   terminal = STDIN_FILENO;
   interactive = isatty(terminal);
 
+  std::cout << "PID: " << getpid() 
+            << "\nPGID: " << getpgrp() 
+            << "\nTerminal Foreground PGID: " << tcgetpgrp(terminal) << std::endl;
+
+
   if (interactive) {
-    std::cout << "Debug!@#!@" << std::endl;
+    std::cout << "Shell is interactive!" << std::endl;
 
     // Loop until we are in the foreground.
     while (tcgetpgrp(terminal) != (processGroupId = getpgrp())) {
-      std::cout << "aoskdjasok" << std::endl;
+      std::cout << "Shell not in foreground, interrupting" << std::endl;
       kill(-processGroupId, SIGTTIN);
     }
 
@@ -29,7 +32,7 @@ void Shell::initShell() {
     signal(SIGCHLD, SIG_IGN);
 
     // Put ourselves in our own process group.
-    processGroupId = getpid ();
+    processGroupId = getpid();
     if (setpgid(processGroupId, processGroupId) < 0) {
       perror("Couldn't put the shell in its own process group");
       exit(1);
@@ -42,5 +45,8 @@ void Shell::initShell() {
     tcgetattr(terminal, &terminalModes);
   }
 
-  std::cout << "PID: " << getpid() << "\nPGID: " << processGroupId << std::endl;
+  std::cout << "PID: " << getpid() 
+            << "\nPGID: " << processGroupId
+            << "\nTerminal Foreground PGID: " << tcgetpgrp(terminal) << std::endl;
+  std::cout << "\n\nFinished shell initialisation!" << std::endl;
 }
