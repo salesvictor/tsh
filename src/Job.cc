@@ -2,7 +2,7 @@
 
 bool Job::Completed() {
   for (auto &process : processList) {
-    if (!process.Completed()) {
+    if (!process.completed) {
       return false;
     }
   }
@@ -12,7 +12,7 @@ bool Job::Completed() {
 
 bool Job::Stopped() {
   for (auto &process : processList) {
-    if (!process.Completed() && !process.Stopped()) {
+    if (!process.completed && !process.stopped) {
       return false;
     }
   }

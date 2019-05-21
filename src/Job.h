@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-class Process;
+#include "Process.h"
 
 class Job {
  public:
