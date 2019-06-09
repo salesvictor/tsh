@@ -23,7 +23,7 @@ class Shell {
   bool isInteractive;
   std::vector<Job> jobList;
 
-  // lauchJob() might change job.processGroupId.
+  // LauchJob() might change job.processGroupId.
   void LaunchJob(
       Job &job,
       const bool &foreground);
