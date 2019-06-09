@@ -12,15 +12,21 @@
 
 class Shell {
  public:
-  void initShell();
+  void InitShell();
+  void GetInput();
+  void Exit();
 
  private:
   pid_t processGroupId;
   termios terminalModes;
   int terminal;
-  bool interactive;
-  
+  bool isInteractive;
   std::vector<Job> jobList;
+
+  // lauchJob() might change job.processGroupId.
+  void LaunchJob(
+      Job &job,
+      const bool &foreground);
 };
 
 #endif

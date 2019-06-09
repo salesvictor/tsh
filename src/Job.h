@@ -11,16 +11,27 @@
 
 class Job {
  public:
+  int stdin;
+  int stdout;
+  int stderr;
+  pid_t processGroupId;
+  std::vector<Process> processList;
+
   bool Completed();
   bool Stopped();
+  void LaunchProcess(
+      const Process &process,
+      const int &inFile,
+      const int &outFile,
+      const int &errFile,
+      const int &terminal,
+      const bool &isInteractive,
+      const bool &isForeground);
 
  private:
-  std::vector<Process> processList;
   std::string command;
-  pid_t processGroupId;
   bool notified;
   struct termios terminalModes;
-  int stdin, stdout, stderr;
 };
 
 #endif // TSH_JOB_H
