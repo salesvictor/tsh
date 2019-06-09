@@ -13,7 +13,6 @@ void Shell::initShell() {
             << "\nPGID: " << getpgrp() 
             << "\nTerminal Foreground PGID: " << tcgetpgrp(terminal) << std::endl;
 
-
   if (interactive) {
     std::cout << "Shell is interactive!" << std::endl;
 
