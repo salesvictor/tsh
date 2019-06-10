@@ -31,3 +31,9 @@
 *.out
 *.app
 tsh
+
+# Build directory
+build/
+
+# VSCode files
+.vscode/
