@@ -1,11 +1,13 @@
 #include "Job.h"
 
-#include <sys/unistd.h>
 #include <sys/signal.h>
+#include <sys/unistd.h>
 
-bool Job::Completed() {
-  for (auto &process : processList) {
-    if (!process.completed) {
+#include <iostream>
+
+bool Job::IsCompleted() const {
+  for (const auto &process : process_list_) {
+    if (!process.is_completed) {
       return false;
     }
   }
@@ -13,9 +15,9 @@ bool Job::Completed() {
   return true;
 }
 
-bool Job::Stopped() {
-  for (auto &process : processList) {
-    if (!process.completed && !process.stopped) {
+bool Job::IsStopped() const {
+  for (const auto &process : process_list_) {
+    if (!process.is_completed && !process.is_stopped) {
       return false;
     }
   }
@@ -23,29 +25,25 @@ bool Job::Stopped() {
   return true;
 }
 
-void Job::LaunchProcess(
-    const Process &process,
-    const int &inFile,
-    const int &outFile,
-    const int &errFile,
-    const int &terminal,
-    const bool &isInteractive,
-    const bool &isForeground) {
-  pid_t processId;
+void Job::LaunchProcess(const Process &process, const int &in_file,
+                        const int &out_file, const int &err_file,
+                        const int &terminal, const bool &is_interactive,
+                        const bool &is_foreground) {
+  pid_t process_id;
 
-  if (isInteractive) {
+  if (is_interactive) {
     // Put the process into the process group and give the process group
     // the terminal, if appropriate.
     //
     // This has to be done both by the shell and in the individual
     // child processes because of potential race conditions.
-    processId = getpid();
-    if (processGroupId == 0) {
-      processGroupId = processId;
+    process_id = getpid();
+    if (process_group_id_ == 0) {
+      process_group_id_ = process_id;
     }
-    setpgid(processId, processGroupId);
-    if (isForeground) {
-      tcsetpgrp(terminal, processGroupId);
+    setpgid(process_id, process_group_id_);
+    if (is_foreground) {
+      tcsetpgrp(terminal, process_group_id_);
     }
 
     // Set the handling for job control signals back to the default.
@@ -58,25 +56,31 @@ void Job::LaunchProcess(
   }
 
   // Set the standard input/output channels of the new process.
-  if (inFile != STDIN_FILENO) {
-    dup2(inFile, STDIN_FILENO);
-    close(inFile);
+  if (in_file != STDIN_FILENO) {
+    dup2(in_file, STDIN_FILENO);
+    close(in_file);
   }
-  if (outFile != STDOUT_FILENO) {
-    dup2(outFile, STDOUT_FILENO);
-    close(outFile);
+  if (out_file != STDOUT_FILENO) {
+    dup2(out_file, STDOUT_FILENO);
+    close(out_file);
   }
-  if (errFile != STDERR_FILENO) {
-    dup2(errFile, STDERR_FILENO);
-    close(errFile);
+  if (err_file != STDERR_FILENO) {
+    dup2(err_file, STDERR_FILENO);
+    close(err_file);
   }
 
-  // Execvp() the new process.  Make sure we exit.
-  // TODO(Victor): Transform process.argv into a char**.
   // Be aware of memory leaks!
-  //execvp(process.argv[0], process.argv);
-  execvp(process.argv[0].data(), NULL);
+  std::vector<char *> c_argv;
+  c_argv.reserve(process.argv.size());
+  for (auto &arg : process.argv) {
+    c_argv.push_back(const_cast<char *>(arg.c_str()));
+  }
+  // std::cout << "c_argv[0]: " << c_argv[0] << std::endl;
+  // if (c_argv.size() > 1 ) std::cout << "c_argv[1]: " << c_argv[1] <<
+  // std::endl;
+  // execvp() requires null-terminated array
+  c_argv.push_back(nullptr);
+  execvp(c_argv[0], &c_argv[0]);
   perror("execvp");
   exit(1);
 }
-
