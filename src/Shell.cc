@@ -163,15 +163,15 @@ std::pair<std::vector<Process>, bool> Shell::ParseCommand(std::string command) {
 }
 
 void Shell::LaunchJob(Job &job, const bool &is_foreground) {
-  pid_t process_id;
-  int process_pipe[2];
-  int in_file;
+  int in_file{job.stdin_};
   int out_file;
+  int process_pipe[2]{};
+  pid_t process_id{0};
 
-  in_file = job.stdin_;
   for (auto &process : job.process_list_) {
-    // Set up pipes, if necessary.
+    // Check if we aren't on the last process of the chain
     if (&process != &job.process_list_.back()) {
+      // Set up pipes, if necessary.
       if (pipe(process_pipe) < 0) {
         perror("pipe");
         exit(1);
