@@ -15,6 +15,7 @@ class Job {
   int stdout_;
   int stderr_;
   pid_t process_group_id_;
+  bool is_notified_;  
   struct termios terminal_modes_;
   std::string command_;
   std::vector<Process> process_list_;
@@ -36,9 +37,6 @@ class Job {
                      const int &outFile, const int &errFile,
                      const int &terminal, const bool &isInteractive,
                      const bool &isForeground);
-
- private:
-  bool is_notified_;
 };
 
 #endif  // TSH_JOB_H
