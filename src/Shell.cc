@@ -9,10 +9,6 @@
 #include <sstream>
 #include <string>
 
-// TODO(Victor): forward declarations to shut compiler, implement them!
-// Comment the following lines to run the shell.
-// extern void format_job_info(const Job&, const std::string&);
-
 void Shell::InitShell() {
   // See if we are running interactively.
   terminal_ = STDIN_FILENO;
