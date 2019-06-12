@@ -34,7 +34,7 @@ void Shell::InitShell() {
     // Put ourselves in our own process group.
     process_group_id_ = getpid();
     if (setpgid(process_group_id_, process_group_id_) < 0) {
-      perror("Couldn't put the shell in its own process group");
+      std::perror("Couldn't put the shell in its own process group");
       exit(1);
     }
 
@@ -62,7 +62,7 @@ void Shell::GetInput() {
     pid_t process_group_id = 0;
     struct termios terminal_modes = {};
 
-    std::cout << "tsh-0.1.0$ ";
+    PrintPrompt();
     std::getline(std::cin, command);
     if (command == "exit" || std::cin.eof()) {
       break;
@@ -157,7 +157,7 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
     if (&process != &job.process_list_.back()) {
       // Set up pipes, if necessary.
       if (pipe(process_pipe) < 0) {
-        perror("pipe");
+        std::perror("pipe");
         exit(1);
       }
       out_file = process_pipe[1];
@@ -165,23 +165,32 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
       out_file = job.stdout_;
     }
 
-    // Fork the child processes.
-    process_id = fork();
-    if (process_id == 0) {
-      job.LaunchProcess(process, in_file, out_file, job.stderr_, terminal_,
-                        is_interactive_, is_foreground);
-    } else if (process_id < 0) {
-      // The fork failed.
-      perror("fork");
-      exit(1);
+    // Checks for built-ins
+    if (process.argv[0] == "cd") {
+      if (process.argv.size() > 1 && chdir(process.argv[1].c_str()) < 0) {
+        std::perror("cd");
+      } else {
+        process.is_completed = true;
+      }
     } else {
-      // This is the parent process.
-      process.process_id = process_id;
-      if (is_interactive_) {
-        if (!job.process_group_id_) {
-          job.process_group_id_ = process_id;
+      // Fork the child processes.
+      process_id = fork();
+      if (process_id == 0) {
+        job.LaunchProcess(process, in_file, out_file, job.stderr_, terminal_,
+                          is_interactive_, is_foreground);
+      } else if (process_id < 0) {
+        // The fork failed.
+        std::perror("fork");
+        exit(1);
+      } else {
+        // This is the parent process.
+        process.process_id = process_id;
+        if (is_interactive_) {
+          if (!job.process_group_id_) {
+            job.process_group_id_ = process_id;
+          }
+          setpgid(process_id, job.process_group_id_);
         }
-        setpgid(process_id, job.process_group_id_);
       }
     }
 

@@ -6,6 +6,7 @@
 #include <sys/unistd.h>
 
 #include <vector>
+#include <iostream>
 
 #include "Job.h"
 #include "Process.h"
@@ -23,6 +24,13 @@ class Shell {
   pid_t process_group_id_;
   termios terminal_modes_;
   std::vector<Job> job_list_;
+
+  inline void PrintPrompt() {
+    static char working_dir[100];
+
+    getcwd(working_dir, 100);
+    std::cout << "tsh-0.1.0 [" << working_dir << "] $ ";
+  }
 
   // LauchJob() might change job.processGroupId.
   void LaunchJob(Job &job, const bool &is_foreground);
@@ -58,7 +66,7 @@ class Shell {
 
   // Mark a stopped job as being running again.
   void MarkJobAsRunning(Job &job);
-  
+
   // Continue a stopped job.
   void ContinueJob(Job &job, int foreground);
 
