@@ -160,11 +160,9 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
       process.is_completed = true;
     } else if (process.argv[0] == "fg" || process.argv[0] == "bg") {
       const bool foreground = (process.argv[0] == "fg");
-      std::cout << "foreground: " << foreground << std::endl;
       if (process.argv.size() > 1) {
         const std::string arg{process.argv[1]};
         if (arg[0] == '%') {
-          std::cout << "substr: " << arg.substr(1) << std::endl;
           int job_num = atoi(arg.substr(1).c_str()) - 1;
           if (job_num >= process.argv.size()) {
             std::cerr << process.argv[0] << ": Job number out of range"
@@ -208,31 +206,31 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
           }
           setpgid(process_id, job.process_group_id_);
         }
-
-        // Clean up after pipes.
-        if (in_file != job.stdin_) {
-          close(in_file);
-        }
-        if (out_file != job.stdout_) {
-          close(out_file);
-        }
-        in_file = process_pipe[0];
-        FormatJobInfo(job, "launched");
-
-        if (!is_interactive_) {
-          std::cerr << "Wait for job" << std::endl;
-          WaitForJob(job);
-        } else if (is_foreground) {
-          std::cerr << "Putting job in foreground" << std::endl;
-          PutJobInForeground(job, false);
-        } else {
-          std::cerr << "Putting job in background" << std::endl;
-          PutJobInBackground(job, false);
-        }
-        std::cout << std::endl;
       }
     }
   }
+
+  // Clean up after pipes.
+  if (in_file != job.stdin_) {
+    close(in_file);
+  }
+  if (out_file != job.stdout_) {
+    close(out_file);
+  }
+  in_file = process_pipe[0];
+  FormatJobInfo(job, "launched");
+
+  if (!is_interactive_) {
+    std::cerr << "Wait for job" << std::endl;
+    WaitForJob(job);
+  } else if (is_foreground) {
+    std::cerr << "Putting job in foreground" << std::endl;
+    PutJobInForeground(job, false);
+  } else {
+    std::cerr << "Putting job in background" << std::endl;
+    PutJobInBackground(job, false);
+  }
+  std::cout << std::endl;
 }
 
 void Shell::PutJobInForeground(Job &job, const bool &send_sig_cont) {
