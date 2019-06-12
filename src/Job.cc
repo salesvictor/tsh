@@ -75,9 +75,7 @@ void Job::LaunchProcess(const Process &process, const int &in_file,
   for (auto &arg : process.argv) {
     c_argv.push_back(const_cast<char *>(arg.c_str()));
   }
-  // std::cout << "c_argv[0]: " << c_argv[0] << std::endl;
-  // if (c_argv.size() > 1 ) std::cout << "c_argv[1]: " << c_argv[1] <<
-  // std::endl;
+
   // execvp() requires null-terminated array
   c_argv.push_back(nullptr);
   execvp(c_argv[0], &c_argv[0]);

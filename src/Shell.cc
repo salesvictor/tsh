@@ -29,7 +29,7 @@ void Shell::InitShell() {
     signal(SIGTSTP, SIG_IGN);
     signal(SIGTTIN, SIG_IGN);
     signal(SIGTTOU, SIG_IGN);
-    signal(SIGCHLD, SIG_IGN);
+    // signal(SIGCHLD, SIG_IGN);
 
     // Put ourselves in our own process group.
     process_group_id_ = getpid();
@@ -45,9 +45,6 @@ void Shell::InitShell() {
     tcgetattr(terminal_, &terminal_modes_);
   }
 
-  std::cout << "PID: " << getpid() << "\nPGID: " << process_group_id_
-            << "\nTerminal Foreground PGID: " << tcgetpgrp(terminal_)
-            << std::endl;
   std::cout << "\n\nFinished shell initialisation!\n"
             << "Type 'exit' without the ticks to get out!\n"
             << std::endl;
@@ -69,49 +66,30 @@ void Shell::GetInput() {
     std::getline(std::cin, command);
     if (command == "exit" || std::cin.eof()) {
       break;
-    } 
-    else if (command == "jobs") {
-      int i =0;
+    } else if (command == "jobs") {
+      int i = 0;
       for (auto &job : job_list_) {
-        std::cout << "[" << i << "]  ";  
+        std::cout << "[" << i << "]  ";
         if (job.IsCompleted()) {
           std::cout << "Completed";
-        } 
-        else if (job.IsStopped()) {
-          std::cout << "Stopped";
-        }
-        else {
+        } else if (job.IsStopped()) {
+          std::cout << "Stopped  ";
+        } else {
           std::cout << "Executing";
         }
         std::cout << "     " << job.command_ << std::endl;
         ++i;
       }
-    }
-    else {
+    } else {
       std::string token;
       auto parse_information = ParseCommand(command);
       std::vector<Process> process_list = parse_information.first;
       bool is_foreground = parse_information.second;
-      // for (const auto &process : process_list) {
-      //  for (size_t i = 0; i < process.argv.size(); ++i) {
-      //    if (i == 0) {
-      //      std::cout << "\tProcess: ";
-      //    } else if (i == 1) {
-      //      std::cout << "\t\tArgs: ";
-      //    }
-      //    std::cout << process.argv[i] << " ";
-      //    if (i == 0) {
-      //      std::cout << std::endl;
-      //    }
-      //  }
-      //  std::cout << std::endl;
-      // }
-      // std::cout << std::endl;
 
-      Job job{in_file, out_file, err_file, process_group_id,
+      Job job{in_file,        out_file, err_file,    process_group_id,
               terminal_modes, command,  process_list};
       job_list_.push_back(job);
-      LaunchJob(job, is_foreground);
+      LaunchJob(job_list_.back(), is_foreground);
     }
 
     // Perform jobs status updates and notifications
@@ -135,15 +113,10 @@ std::pair<std::vector<Process>, bool> Shell::ParseCommand(std::string command) {
   std::smatch pipe_match;
   std::vector<Process> process_list;
   while (std::regex_match(command, pipe_match, pipe_regex)) {
-    // std::cout << "process_command (" << pipe_match.size() << "
-    // matches):\n\t";
     std::string process_command = pipe_match[1].str();
-    // std::cout << process_command << std::endl;
 
     Process process{};
     while (std::regex_search(process_command, process_match, process_regex)) {
-      // std::cout << "\targument:\n\t\t";
-      // std::cout << process_match[0] << std::endl;
       process.argv.push_back(process_match[1]);
       process_command = process_match.suffix().str();
     }
@@ -157,12 +130,8 @@ std::pair<std::vector<Process>, bool> Shell::ParseCommand(std::string command) {
   // job.
   if (!command.empty()) {
     std::string process_command{command};
-    // std::cout << "process_command:\n\t";
-    // std::cout << process_command << std::endl;
     Process process{};
     while (std::regex_search(process_command, process_match, process_regex)) {
-      // std::cout << "\t2 - argument:\n\t\t";
-      // std::cout << process_match[0] << std::endl;
       if (process_match[1] == "&") {
         is_foreground = false;
       } else {
@@ -275,21 +244,18 @@ void Shell::PutJobInBackground(const Job &job, const bool &send_sig_cont) {
 
 int Shell::MarkProcessStatus(const pid_t &process_id, const int &status) {
   if (process_id > 0) {
-    std::cout << std::endl << process_id << std::endl << job_list_.size() << std::endl;
     // Update the record for the process.
     for (auto &job : job_list_) {
-      std::cout << job.process_list_.size();
       for (auto &process : job.process_list_) {
         if (process.process_id == process_id) {
           process.status = status;
           if (WIFSTOPPED(status)) {
             process.is_stopped = true;
-            std::cout << std::endl;
           } else {
             process.is_completed = true;
-            std::cout << std::endl;
             if (WIFSIGNALED(status)) {
-              std::cerr << std::endl << process_id << ": Terminated by signal"
+              std::cerr << std::endl
+                        << process_id << ": Terminated by signal"
                         << WTERMSIG(process.status) << "." << std::endl;
             }
           }
@@ -297,7 +263,8 @@ int Shell::MarkProcessStatus(const pid_t &process_id, const int &status) {
         }
       }
     }
-    std::cerr << std::endl << "No child process " << process_id << "." << std::endl;
+    std::cerr << std::endl
+              << "No child process " << process_id << "." << std::endl;
     return -1;
   } else if (process_id == 0 || errno == ECHILD) {
     // No processes ready to report.
@@ -314,7 +281,7 @@ void Shell::UpdateStatus() {
   pid_t process_id;
 
   do {
-    process_id = waitpid(WAIT_ANY, &status, WUNTRACED|WNOHANG);
+    process_id = waitpid(WAIT_ANY, &status, WUNTRACED | WNOHANG);
   } while (!MarkProcessStatus(process_id, status));
 }
 
@@ -331,9 +298,6 @@ void Shell::WaitForJob(const Job &job) {
 void Shell::FormatJobInfo(const Job &job, const std::string &status) {
   std::cerr << job.process_group_id_ << " (" << status << "): " << job.command_
             << std::endl;
-  for (auto &process : job.process_list_) {
-    std::cerr << "process: " << process.process_id << std::endl;
-  }
 }
 
 void Shell::DoJobNotification() {
@@ -343,14 +307,6 @@ void Shell::DoJobNotification() {
   auto iter = std::begin(job_list_);
   for (auto &job : job_list_) {
     ++iter;
-
-    for (auto &process : job.process_list_) {
-      for (auto &argv : process.argv) {
-        std::cout << argv;
-      }
-    }
-
-    std::cout << std::endl;
 
     // If all processes have completed, tell the user the job has
     // completed and delete it from the list of active jobs.
@@ -377,13 +333,11 @@ void Shell::MarkJobAsRunning(Job &job) {
   job.is_notified_ = false;
 }
 
-void Shell::ContinueJob(Job &job, int foreground)
-{
+void Shell::ContinueJob(Job &job, int foreground) {
   MarkJobAsRunning(job);
   if (foreground) {
     PutJobInForeground(job, 1);
-  }
-  else {
+  } else {
     PutJobInBackground(job, 1);
   }
 }

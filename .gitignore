@@ -37,3 +37,6 @@ build/
 
 # VSCode files
 .vscode/
+
+# Tags
+tags
