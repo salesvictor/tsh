@@ -207,13 +207,13 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
   FormatJobInfo(job, "launched");
 
   if (!is_interactive_) {
-    std::cout << "Wait for job" << std::endl;
+    std::cerr << "Wait for job" << std::endl;
     WaitForJob(job);
   } else if (is_foreground) {
-    std::cout << "Putting job in foreground" << std::endl;
+    std::cerr << "Putting job in foreground" << std::endl;
     PutJobInForeground(job, false);
   } else {
-    std::cout << "Putting job in background" << std::endl;
+    std::cerr << "Putting job in background" << std::endl;
     PutJobInBackground(job, false);
   }
   std::cout << std::endl;
