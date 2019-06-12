@@ -40,3 +40,6 @@ build/
 
 # Tags
 tags
+
+# Log
+tsh.log
