@@ -1,6 +1,6 @@
 all: tsh
 
-tsh: Job.cc Shell.cc Main.cc
+tsh: Job.cc Shell.cc Main.cc Job.h Shell.h Process.h
 	$(CXX) $^ -o tsh
 
 clean:

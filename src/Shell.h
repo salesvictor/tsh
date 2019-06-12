@@ -5,8 +5,8 @@
 #include <sys/types.h>
 #include <sys/unistd.h>
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
 #include "Job.h"
 #include "Process.h"
@@ -27,9 +27,14 @@ class Shell {
 
   inline void PrintPrompt() {
     static char working_dir[100];
+    static char hostname[100];
+    static std::string username;
 
     getcwd(working_dir, 100);
-    std::cout << "tsh-0.1.0 [" << working_dir << "] $ ";
+    gethostname(hostname, 100);
+    username = getlogin();
+    std::cout << "tsh-0.1.0 [" << username << "@" << hostname << ": "
+              << working_dir << "] $ ";
   }
 
   // LauchJob() might change job.processGroupId.
