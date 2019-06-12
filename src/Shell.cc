@@ -67,7 +67,7 @@ void Shell::GetInput() {
     if (command == "exit" || std::cin.eof()) {
       break;
     } else if (command == "jobs") {
-      int i = 0;
+      int i = 1;
       for (auto &job : job_list_) {
         std::cout << "[" << i << "]  ";
         if (job.IsCompleted()) {
@@ -81,7 +81,6 @@ void Shell::GetInput() {
         ++i;
       }
     } else {
-      std::string token;
       auto parse_information = ParseCommand(command);
       std::vector<Process> process_list = parse_information.first;
       bool is_foreground = parse_information.second;
@@ -153,44 +152,44 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
   pid_t process_id{0};
 
   for (auto &process : job.process_list_) {
-    // Check if we aren't on the last process of the chain
-    if (&process != &job.process_list_.back()) {
-      // Set up pipes, if necessary.
-      if (pipe(process_pipe) < 0) {
-        std::perror("pipe");
-        exit(1);
-      }
-      out_file = process_pipe[1];
-    } else {
-      out_file = job.stdout_;
-    }
-
     // Checks for built-ins
     if (process.argv[0] == "cd") {
       if (process.argv.size() > 1 && chdir(process.argv[1].c_str()) < 0) {
         std::perror("cd");
-      } else {
-        process.is_completed = true;
       }
+      process.is_completed = true;
     } else if (process.argv[0] == "fg" || process.argv[0] == "bg") {
-      bool foreground = (process.argv[0] == "fg");
+      const bool foreground = (process.argv[0] == "fg");
+      std::cout << "foreground: " << foreground << std::endl;
       if (process.argv.size() > 1) {
-        std::string arg{process.argv[1]};
+        const std::string arg{process.argv[1]};
         if (arg[0] == '%') {
-          int job_num = atoi(arg.substr(1).c_str());
+          std::cout << "substr: " << arg.substr(1) << std::endl;
+          int job_num = atoi(arg.substr(1).c_str()) - 1;
           if (job_num >= process.argv.size()) {
-            std::cerr << process.argv[0] << ": Job number out of range";
+            std::cerr << process.argv[0] << ": Job number out of range"
+                      << std::endl;
+          } else {
+            ContinueJob(job_list_[job_num], foreground);
           }
-            if (foreground) {
-              PutJobInForeground(job_list_[job_num], true);
-            }
-            else {
-              PutJobInBackground(job_list_[job_num], true);
-            }         
-        } 
+        }
+      } else {
+        std::cerr << process.argv[0] << ": Use as '" << process.argv[0]
+                  << " %N'" << std::endl;
       }
-    }
-    else {
+      process.is_completed = true;
+    } else {
+      // Check if we aren't on the last process of the chain
+      if (&process != &job.process_list_.back()) {
+        // Set up pipes, if necessary.
+        if (pipe(process_pipe) < 0) {
+          std::perror("pipe");
+          exit(1);
+        }
+        out_file = process_pipe[1];
+      } else {
+        out_file = job.stdout_;
+      }
       // Fork the child processes.
       process_id = fork();
       if (process_id == 0) {
@@ -209,32 +208,31 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
           }
           setpgid(process_id, job.process_group_id_);
         }
+
+        // Clean up after pipes.
+        if (in_file != job.stdin_) {
+          close(in_file);
+        }
+        if (out_file != job.stdout_) {
+          close(out_file);
+        }
+        in_file = process_pipe[0];
+        FormatJobInfo(job, "launched");
+
+        if (!is_interactive_) {
+          std::cerr << "Wait for job" << std::endl;
+          WaitForJob(job);
+        } else if (is_foreground) {
+          std::cerr << "Putting job in foreground" << std::endl;
+          PutJobInForeground(job, false);
+        } else {
+          std::cerr << "Putting job in background" << std::endl;
+          PutJobInBackground(job, false);
+        }
+        std::cout << std::endl;
       }
     }
-
-    // Clean up after pipes.
-    if (in_file != job.stdin_) {
-      close(in_file);
-    }
-    if (out_file != job.stdout_) {
-      close(out_file);
-    }
-    in_file = process_pipe[0];
   }
-
-  FormatJobInfo(job, "launched");
-
-  if (!is_interactive_) {
-    std::cerr << "Wait for job" << std::endl;
-    WaitForJob(job);
-  } else if (is_foreground) {
-    std::cerr << "Putting job in foreground" << std::endl;
-    PutJobInForeground(job, false);
-  } else {
-    std::cerr << "Putting job in background" << std::endl;
-    PutJobInBackground(job, false);
-  }
-  std::cout << std::endl;
 }
 
 void Shell::PutJobInForeground(Job &job, const bool &send_sig_cont) {
@@ -360,7 +358,7 @@ void Shell::MarkJobAsRunning(Job &job) {
   job.is_notified_ = false;
 }
 
-void Shell::ContinueJob(Job &job, int foreground) {
+void Shell::ContinueJob(Job &job, const bool &foreground) {
   MarkJobAsRunning(job);
   if (foreground) {
     PutJobInForeground(job, 1);

@@ -73,7 +73,7 @@ class Shell {
   void MarkJobAsRunning(Job &job);
 
   // Continue a stopped job.
-  void ContinueJob(Job &job, int foreground);
+  void ContinueJob(Job &job, const bool &foreground);
 
   // Notify the user about stopped or terminated jobs.
   // Delete terminated jobs from the active job list.
