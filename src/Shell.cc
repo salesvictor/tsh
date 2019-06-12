@@ -172,7 +172,25 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
       } else {
         process.is_completed = true;
       }
-    } else {
+    } else if (process.argv[0] == "fg" || process.argv[0] == "bg") {
+      bool foreground = (process.argv[0] == "fg");
+      if (process.argv.size() > 1) {
+        std::string arg{process.argv[1]};
+        if (arg[0] == '%') {
+          int job_num = atoi(arg.substr(1).c_str());
+          if (job_num >= process.argv.size()) {
+            std::cerr << process.argv[0] << ": Job number out of range";
+          }
+            if (foreground) {
+              PutJobInForeground(job_list_[job_num], true);
+            }
+            else {
+              PutJobInBackground(job_list_[job_num], true);
+            }         
+        } 
+      }
+    }
+    else {
       // Fork the child processes.
       process_id = fork();
       if (process_id == 0) {
