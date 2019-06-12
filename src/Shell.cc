@@ -255,7 +255,7 @@ int Shell::MarkProcessStatus(const pid_t &process_id, const int &status) {
             process.is_completed = true;
             if (WIFSIGNALED(status)) {
               std::cerr << std::endl
-                        << process_id << ": Terminated by signal"
+                        << process_id << ": Terminated by signal "
                         << WTERMSIG(process.status) << "." << std::endl;
             }
           }
