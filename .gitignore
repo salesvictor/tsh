@@ -38,6 +38,10 @@ build/
 # VSCode files
 .vscode/
 
+# CLion files
+.idea/
+cmake-build-debug/
+
 # Tags
 tags
 
