@@ -4,6 +4,7 @@
 #include <sys/termios.h>
 #include <sys/types.h>
 #include <sys/unistd.h>
+#include <pwd.h>
 
 #include <iostream>
 #include <vector>
@@ -20,7 +21,6 @@ class Shell {
  private:
   int terminal_;
   bool is_interactive_;
-  bool is_reading_;
   pid_t process_group_id_;
   termios terminal_modes_;
   std::vector<Job> job_list_;
@@ -29,12 +29,20 @@ class Shell {
     static char working_dir[100];
     static char hostname[100];
     static std::string username;
+    static std::string sum_working_dir;
 
     getcwd(working_dir, 100);
+    sum_working_dir = working_dir;
     gethostname(hostname, 100);
-    username = getlogin();
+    username = getpwuid(getuid())->pw_name;
+
+    std::string user_dir = "/home/" + username;
+    if (sum_working_dir.find(user_dir) == 0) {
+      sum_working_dir = "~" + sum_working_dir.substr(user_dir.length());
+    }
+
     std::cout << "tsh-0.1.0 [" << username << "@" << hostname << ": "
-              << working_dir << "] $ ";
+              << sum_working_dir << "] $ ";
   }
 
   // LauchJob() might change job.processGroupId.
