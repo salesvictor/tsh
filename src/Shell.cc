@@ -94,6 +94,10 @@ void Shell::GetInput() {
     // Perform jobs status updates and notifications
     DoJobNotification();
   }
+
+  for (auto &job : job_list_) {
+    std::cout << job.command_ << std::endl;
+  }
 }
 
 std::pair<std::vector<Process>, bool> Shell::ParseCommand(std::string command) {
@@ -147,7 +151,7 @@ std::pair<std::vector<Process>, bool> Shell::ParseCommand(std::string command) {
 
 void Shell::LaunchJob(Job &job, const bool &is_foreground) {
   int in_file{job.stdin_};
-  int out_file;
+  int out_file{job.stdout_};
   int process_pipe[2]{};
   pid_t process_id{0};
 
@@ -160,17 +164,15 @@ void Shell::LaunchJob(Job &job, const bool &is_foreground) {
         exit(1);
       }
       out_file = process_pipe[1];
-    } else {
-      out_file = job.stdout_;
     }
 
     // Checks for built-ins
-    if (process.argv[0] == "cd") {
+    if (!process.argv.empty() && process.argv[0] == "cd") {
       if (process.argv.size() > 1 && chdir(process.argv[1].c_str()) < 0) {
         std::perror("cd");
       }
       process.is_completed = true;
-    } else if (process.argv[0] == "fg" || process.argv[0] == "bg") {
+    } else if (!process.argv.empty() && (process.argv[0] == "fg" || process.argv[0] == "bg")) {
       const bool foreground = (process.argv[0] == "fg");
       if (process.argv.size() > 1) {
         const std::string arg{process.argv[1]};
