@@ -1,5 +1,21 @@
 # tsh - Test Shell
 
+## Running this code
+### Using CMake
+If you have CMake version 3.5 or higher installed, than you can install tsh running the following commands in tsh root directory:
+```
+mkdir -p build && cd build
+cmake ..
+sudo make install
+```
+### Using raw Makefile
+Just run following commands:
+```
+cd src
+make
+./tsh
+```
+
 ## Built-in commands
 
 | Command | Description |
